@@ -143,11 +143,7 @@ private fun GraphicIndicator(
 
         val top = center.copy(y = center.y - min(center.x, center.y))
 
-        drawLine(
-            color = color,
-            start = center,
-            end = top
-        )
+        drawLine(color = color, start = center, end = top)
 
         drawArc(
             color = color,
@@ -184,35 +180,47 @@ private fun ControlRow(
             Icon(Icons.Default.Stop, "Reset")
         }
 
-        when (timerState) {
-            TimerState.INIT, TimerState.DONE -> CircularButton(
+        PlayPauseButton(timerState, seconds, disabledColor, primaryColor, onStartClicked, onPauseClicked)
+    }
+}
+
+@Composable
+private fun PlayPauseButton(
+    timerState: TimerState,
+    seconds: Int,
+    disabledColor: Color,
+    primaryColor: Color,
+    onStartClicked: () -> Unit,
+    onPauseClicked: () -> Unit
+) {
+    when (timerState) {
+        TimerState.INIT, TimerState.DONE -> CircularButton(
+            modifier = Modifier.size(64.dp),
+            onClick = onStartClicked,
+            enabled = seconds != 0,
+            enabledColor = primaryColor,
+            disabledColor = disabledColor,
+        ) {
+            Icon(Icons.Default.PlayArrow, "Start")
+        }
+        TimerState.RUNNING -> {
+            CircularButton(
                 modifier = Modifier.size(64.dp),
-                onClick = onStartClicked,
-                enabled = seconds != 0,
+                onClick = onPauseClicked,
                 enabledColor = primaryColor,
                 disabledColor = disabledColor,
             ) {
-                Icon(Icons.Default.PlayArrow, "Start")
+                Icon(Icons.Default.Pause, "Pause")
             }
-            TimerState.RUNNING -> {
-                CircularButton(
-                    modifier = Modifier.size(64.dp),
-                    onClick = onPauseClicked,
-                    enabledColor = primaryColor,
-                    disabledColor = disabledColor,
-                ) {
-                    Icon(Icons.Default.Pause, "Pause")
-                }
-            }
-            TimerState.PAUSED -> {
-                CircularButton(
-                    modifier = Modifier.size(64.dp),
-                    onClick = onStartClicked,
-                    enabledColor = primaryColor,
-                    disabledColor = disabledColor,
-                ) {
-                    Icon(Icons.Default.PlayArrow, "Cotinue")
-                }
+        }
+        TimerState.PAUSED -> {
+            CircularButton(
+                modifier = Modifier.size(64.dp),
+                onClick = onStartClicked,
+                enabledColor = primaryColor,
+                disabledColor = disabledColor,
+            ) {
+                Icon(Icons.Default.PlayArrow, "Cotinue")
             }
         }
     }

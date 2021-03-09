@@ -24,6 +24,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ import com.example.androiddevchallenge.ui.theme.DarkColorPalette
 import com.example.androiddevchallenge.ui.theme.LightColorPalette
 import com.example.androiddevchallenge.ui.theme.MyTheme
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,93 +57,114 @@ enum class ColorState { NORMAL, INVERTED }
 // Start building your app here!
 @Composable
 fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
-    var initialTime by remember { mutableStateOf(0) }
-    var seconds by remember { mutableStateOf(0) }
-    var millis by remember { mutableStateOf(0L) }
+    val initialTime = remember { mutableStateOf(0) }
+    val seconds = remember { mutableStateOf(0) }
+    val millis = remember { mutableStateOf(0L) }
 
 
-    var state by remember { mutableStateOf(TimerState.INIT) }
-    var colorState by remember { mutableStateOf(ColorState.NORMAL) }
+    val state = remember { mutableStateOf(TimerState.INIT) }
+    val colorState = remember { mutableStateOf(ColorState.NORMAL) }
 
     val scope = rememberCoroutineScope()
 
-    var job by remember { mutableStateOf<Job?>(null) }
+    val job = remember { mutableStateOf<Job?>(null) }
 
     val primaryPallette = if (darkTheme) DarkColorPalette else LightColorPalette
     val invertedPallette = if (darkTheme) LightColorPalette else DarkColorPalette
 
-    val backgroundColor by animateColorAsState(if (colorState == ColorState.NORMAL) primaryPallette.surface else invertedPallette.surface)
-    val primaryColor by animateColorAsState(if (colorState == ColorState.NORMAL) primaryPallette.primary else invertedPallette.primary)
-    val textColor by animateColorAsState(if (colorState == ColorState.NORMAL) primaryPallette.onSurface else invertedPallette.onSurface)
+    val backgroundColor by animateColorAsState(if (colorState.value == ColorState.NORMAL) primaryPallette.surface else invertedPallette.surface)
+    val primaryColor by animateColorAsState(if (colorState.value == ColorState.NORMAL) primaryPallette.primary else invertedPallette.primary)
+    val textColor by animateColorAsState(if (colorState.value == ColorState.NORMAL) primaryPallette.onSurface else invertedPallette.onSurface)
 
-    var fraction by remember { mutableStateOf(0f) }
+    val fraction = remember { mutableStateOf(0f) }
 
     TimerScreen(
         modifier = Modifier.fillMaxSize(),
-        state,
-        seconds = seconds,
+        timerState = state.value,
+        seconds = seconds.value,
         backgroundColor = backgroundColor,
         primaryColor = primaryColor,
         textColor = textColor,
-        fraction = fraction,
-        onAddClicked = {
-            seconds += it
-            seconds.coerceAtMost(3599)
-            fraction = seconds % 60 / 60f
-        },
-        onRemoveClicked = {
-            seconds -= it
-            seconds = seconds.coerceAtLeast(0)
-            fraction = seconds % 60 / 60f
-        },
-        onStartClicked = {
-            colorState = ColorState.NORMAL
-            if (state == TimerState.INIT) {
-                initialTime = seconds
-                millis = seconds * 1000L
-            }
-
-            state = TimerState.RUNNING
-            job = scope.launch {
-                fraction = seconds.toFloat() / initialTime
-
-                var startMillis = System.currentTimeMillis()
-                try {
-                    while (millis > 0L) {
-                        delay(10)
-                        val tickMillis = System.currentTimeMillis()
-                        millis -= tickMillis - startMillis
-                        millis = millis.coerceAtLeast(0L)
-
-                        startMillis = tickMillis
-                        seconds = if (millis == 0L) 0 else ((millis + 1000) / 1000).toInt()
-                        fraction = seconds.toFloat() / initialTime
-                    }
-                    state = TimerState.DONE
-
-                    while (true) {
-                        colorState = if (colorState == ColorState.NORMAL) ColorState.INVERTED else ColorState.NORMAL
-                        delay(500)
-                    }
-                } catch (e: CancellationException) {
-                    val cancelMillis = System.currentTimeMillis()
-                    millis -= cancelMillis - startMillis
-                }
-            }
-        },
-        onPauseClicked = {
-            job?.cancel()
-            colorState = ColorState.INVERTED
-            state = TimerState.PAUSED
-        },
-        onResetClicked = {
-            job?.cancel()
-            seconds = initialTime
-            colorState = ColorState.NORMAL
-            state = TimerState.INIT
-            fraction = seconds % 60 / 60f
-        }
+        fraction = fraction.value,
+        onAddClicked = { onTimeChange(it, seconds, fraction) },
+        onRemoveClicked = { onTimeChange(-it, seconds, fraction) },
+        onStartClicked = { onStartClicked(scope, job, state, colorState, initialTime, seconds, millis, fraction) },
+        onPauseClicked = { onPauseClicked(job.value, colorState, state) },
+        onResetClicked = { onResetClicked(initialTime.value, job.value, seconds, colorState, state, fraction) }
     )
+}
+
+
+fun onStartClicked(
+    scope: CoroutineScope,
+    job: MutableState<Job?>,
+    state: MutableState<TimerState>,
+    colorState: MutableState<ColorState>,
+    initialTime: MutableState<Int>,
+    seconds: MutableState<Int>,
+    millis: MutableState<Long>,
+    fraction: MutableState<Float>,
+) {
+    colorState.value = ColorState.NORMAL
+    if (state.value == TimerState.INIT) {
+        initialTime.value = seconds.value
+        millis.value = seconds.value * 1000L
+    }
+
+    state.value = TimerState.RUNNING
+    job.value = scope.launch {
+        fraction.value = seconds.value.toFloat() / initialTime.value
+
+        var startMillis = System.currentTimeMillis()
+        try {
+            while (millis.value > 0L) {
+                delay(10)
+                val tickMillis = System.currentTimeMillis()
+                millis.value -= tickMillis - startMillis
+                millis.value = millis.value.coerceAtLeast(0L)
+
+                startMillis = tickMillis
+                seconds.value = if (millis.value == 0L) 0 else ((millis.value + 1000) / 1000).toInt()
+                fraction.value = seconds.value.toFloat() / initialTime.value
+            }
+            state.value = TimerState.DONE
+
+            while (true) {
+                colorState.value = if (colorState.value == ColorState.NORMAL) ColorState.INVERTED else ColorState.NORMAL
+                delay(500)
+            }
+        } catch (e: CancellationException) {
+            val cancelMillis = System.currentTimeMillis()
+            millis.value -= cancelMillis - startMillis
+        }
+    }
+}
+
+fun onTimeChange(change: Int, seconds: MutableState<Int>, fraction: MutableState<Float>) {
+    val newValue = seconds.value + change
+    seconds.value = newValue.coerceIn(0 .. 3599)
+    fraction.value = seconds.value % 60 / 60f
+}
+
+fun onPauseClicked(job: Job?, colorState: MutableState<ColorState>, timerState: MutableState<TimerState>) {
+    job?.cancel()
+    colorState.value = ColorState.INVERTED
+    timerState.value = TimerState.PAUSED
+}
+
+fun onResetClicked(
+    initialTime: Int,
+    job: Job?,
+    seconds: MutableState<Int>,
+    colorState: MutableState<ColorState>,
+    timerState: MutableState<TimerState>,
+    fraction: MutableState<Float>
+) {
+    job?.cancel()
+    seconds.value = initialTime
+    colorState.value = ColorState.NORMAL
+    timerState.value = TimerState.INIT
+    fraction.value = seconds.value % 60 / 60f
 }
 
 @Preview("Light Theme", widthDp = 360, heightDp = 640)
