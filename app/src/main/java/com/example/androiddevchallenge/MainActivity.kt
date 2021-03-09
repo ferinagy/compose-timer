@@ -16,25 +16,22 @@
 package com.example.androiddevchallenge
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.androiddevchallenge.ui.theme.DarkColorPalette
 import com.example.androiddevchallenge.ui.theme.LightColorPalette
-import com.example.androiddevchallenge.ui.theme.MyTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -60,7 +57,6 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
     val initialTime = remember { mutableStateOf(0) }
     val seconds = remember { mutableStateOf(0) }
     val millis = remember { mutableStateOf(0L) }
-
 
     val state = remember { mutableStateOf(TimerState.INIT) }
     val colorState = remember { mutableStateOf(ColorState.NORMAL) }
@@ -93,7 +89,6 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
         onResetClicked = { onResetClicked(initialTime.value, job.value, seconds, colorState, state, fraction) }
     )
 }
-
 
 fun onStartClicked(
     scope: CoroutineScope,
@@ -142,7 +137,7 @@ fun onStartClicked(
 
 fun onTimeChange(change: Int, seconds: MutableState<Int>, fraction: MutableState<Float>) {
     val newValue = seconds.value + change
-    seconds.value = newValue.coerceIn(0 .. 3599)
+    seconds.value = newValue.coerceIn(0..3599)
     fraction.value = seconds.value % 60 / 60f
 }
 
