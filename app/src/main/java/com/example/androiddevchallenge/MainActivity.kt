@@ -20,6 +20,7 @@ import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -73,6 +74,8 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
     val primaryColor by animateColorAsState(if (colorState == ColorState.NORMAL) primaryPallette.primary else invertedPallette.primary)
     val textColor by animateColorAsState(if (colorState == ColorState.NORMAL) primaryPallette.onSurface else invertedPallette.onSurface)
 
+    var fraction by remember { mutableStateOf(0f) }
+
     TimerScreen(
         modifier = Modifier.fillMaxSize(),
         state,
@@ -80,14 +83,18 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
         backgroundColor = backgroundColor,
         primaryColor = primaryColor,
         textColor = textColor,
-        onAddClicked = { seconds += it },
+        fraction = fraction,
+        onAddClicked = {
+            seconds += it
+            seconds.coerceAtMost(3599)
+            fraction = seconds % 60 / 60f
+        },
         onRemoveClicked = {
             seconds -= it
             seconds = seconds.coerceAtLeast(0)
+            fraction = seconds % 60 / 60f
         },
         onStartClicked = {
-            Log.d("FERI", "MyApp: primary when start $primaryColor")
-            Log.d("FERI", "MyApp: state when start $colorState")
             colorState = ColorState.NORMAL
             if (state == TimerState.INIT) {
                 initialTime = seconds
@@ -96,14 +103,19 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
 
             state = TimerState.RUNNING
             job = scope.launch {
+                fraction = seconds.toFloat() / initialTime
+
                 var startMillis = System.currentTimeMillis()
                 try {
                     while (millis > 0L) {
                         delay(10)
                         val tickMillis = System.currentTimeMillis()
                         millis -= tickMillis - startMillis
+                        millis = millis.coerceAtLeast(0L)
+
                         startMillis = tickMillis
-                        seconds = ((millis + 1000) / 1000).toInt()
+                        seconds = if (millis == 0L) 0 else ((millis + 1000) / 1000).toInt()
+                        fraction = seconds.toFloat() / initialTime
                     }
                     state = TimerState.DONE
 
@@ -118,18 +130,16 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
             }
         },
         onPauseClicked = {
-            Log.d("FERI", "MyApp: primary when paused $primaryColor")
-            Log.d("FERI", "MyApp: state when paused $colorState")
             job?.cancel()
             colorState = ColorState.INVERTED
             state = TimerState.PAUSED
-            Log.d("FERI", "MyApp: state when exiting paused $colorState")
         },
         onResetClicked = {
             job?.cancel()
             seconds = initialTime
             colorState = ColorState.NORMAL
             state = TimerState.INIT
+            fraction = seconds % 60 / 60f
         }
     )
 }

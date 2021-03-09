@@ -2,6 +2,7 @@ package com.example.androiddevchallenge
 
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -29,24 +30,36 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.androiddevchallenge.ui.theme.MyTheme
+import kotlin.math.min
 
 @Preview("Button", widthDp = 64, heightDp = 64)
 @Composable
 fun ButtonPreview() {
+    CircularButton(
+        Modifier.fillMaxSize(),
+        {},
+        true,
+        MaterialTheme.colors.primary,
+        MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled),
+    ) {
+        Icon(Icons.Default.Stop, "Reset")
+    }
+}
+
+@Preview("Graph", widthDp = 200, heightDp = 200)
+@Composable
+fun GraphPreview() {
     MyTheme {
-        CircularButton(
+        GraphicIndicator(
             Modifier.fillMaxSize(),
-            {},
-            true,
-            MaterialTheme.colors.primary,
-            MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled),
-        ) {
-            Icon(Icons.Default.Stop, "Reset")
-        }
+            0.18f,
+            MaterialTheme.colors.primary
+        )
     }
 }
 
@@ -60,7 +73,8 @@ fun LigthTimerScreen() {
             68,
             backgroundColor = MaterialTheme.colors.surface,
             primaryColor = MaterialTheme.colors.primary,
-            textColor = MaterialTheme.colors.onSurface
+            textColor = MaterialTheme.colors.onSurface,
+            0.87f
         )
     }
 }
@@ -75,7 +89,8 @@ fun DarkTimerScreen() {
             0,
             backgroundColor = MaterialTheme.colors.surface,
             primaryColor = MaterialTheme.colors.primary,
-            textColor = MaterialTheme.colors.onSurface
+            textColor = MaterialTheme.colors.onSurface,
+            0.87f
         )
     }
 }
@@ -89,6 +104,7 @@ fun TimerScreen(
     backgroundColor: Color,
     primaryColor: Color,
     textColor: Color,
+    fraction: Float,
     onStartClicked: () -> Unit = {},
     onPauseClicked: () -> Unit = {},
     onResetClicked: () -> Unit = {},
@@ -107,10 +123,43 @@ fun TimerScreen(
             style = MaterialTheme.typography.h1
         )
 
+        GraphicIndicator(modifier = Modifier.size(200.dp), value = fraction, color = primaryColor)
+
         val disabledColor = textColor.copy(alpha = ContentAlpha.disabled)
 
         TimeSettingRow(timerState, seconds, primaryColor, disabledColor, onRemoveClicked, onAddClicked)
         ControlRow(timerState, seconds, primaryColor, disabledColor, onStartClicked, onPauseClicked, onResetClicked)
+    }
+}
+
+@Composable
+private fun GraphicIndicator(
+    modifier: Modifier = Modifier,
+    value: Float,
+    color: Color
+) {
+    Canvas(modifier = modifier) {
+        val sweep = value * 360
+
+        val top = center.copy(y = center.y - min(center.x, center.y))
+
+        drawLine(
+            color = color,
+            start = center,
+            end = top
+        )
+
+        drawArc(
+            color = color,
+            startAngle = -90f,
+            sweepAngle = sweep,
+            useCenter = true
+        )
+
+        drawCircle(
+            color = color,
+            style = Stroke(width = 4f)
+        )
     }
 }
 
