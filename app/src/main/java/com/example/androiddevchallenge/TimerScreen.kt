@@ -92,8 +92,8 @@ fun TimerScreen(
     onStartClicked: () -> Unit = {},
     onPauseClicked: () -> Unit = {},
     onResetClicked: () -> Unit = {},
-    onAddClicked: () -> Unit = {},
-    onRemoveClicked: () -> Unit = {}
+    onAddClicked: (Int) -> Unit = {},
+    onRemoveClicked: (Int) -> Unit = {}
 ) {
     val text = remember(seconds) { "%02d:%02d".format(seconds / 60, seconds % 60) }
     Column(
@@ -109,7 +109,7 @@ fun TimerScreen(
 
         val disabledColor = textColor.copy(alpha = ContentAlpha.disabled)
 
-        TimeSettingRow(timerState, primaryColor, disabledColor, onRemoveClicked, onAddClicked)
+        TimeSettingRow(timerState, seconds, primaryColor, disabledColor, onRemoveClicked, onAddClicked)
         ControlRow(timerState, seconds, primaryColor, disabledColor, onStartClicked, onPauseClicked, onResetClicked)
     }
 }
@@ -172,29 +172,48 @@ private fun ControlRow(
 @Composable
 private fun TimeSettingRow(
     timerState: TimerState,
+    seconds: Int,
     primaryColor: Color,
     disabledColor: Color,
-    onRemoveClicked: () -> Unit,
-    onAddClicked: () -> Unit
+    onRemoveClicked: (Int) -> Unit,
+    onAddClicked: (Int) -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CircularButton(
             Modifier.size(64.dp),
-            onClick = onRemoveClicked,
-            enabled = timerState == TimerState.INIT,
+            onClick = { onRemoveClicked(10) },
+            enabled = timerState == TimerState.INIT && seconds != 0,
             enabledColor = primaryColor,
             disabledColor = disabledColor,
         ) {
-            Text("-1s")
+            Text("-10")
         }
         CircularButton(
             Modifier.size(64.dp),
-            onClick = onAddClicked,
+            onClick = { onRemoveClicked(1) },
+            enabled = timerState == TimerState.INIT && seconds != 0,
+            enabledColor = primaryColor,
+            disabledColor = disabledColor,
+        ) {
+            Text("-1")
+        }
+        CircularButton(
+            Modifier.size(64.dp),
+            onClick = { onAddClicked(1) },
             enabled = timerState == TimerState.INIT,
             enabledColor = primaryColor,
             disabledColor = disabledColor,
         ) {
-            Text("+1s")
+            Text("+1")
+        }
+        CircularButton(
+            Modifier.size(64.dp),
+            onClick = { onAddClicked(10) },
+            enabled = timerState == TimerState.INIT,
+            enabledColor = primaryColor,
+            disabledColor = disabledColor,
+        ) {
+            Text("+10")
         }
     }
 }

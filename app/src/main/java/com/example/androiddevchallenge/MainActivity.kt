@@ -80,8 +80,11 @@ fun MyApp(darkTheme: Boolean = isSystemInDarkTheme()) {
         backgroundColor = backgroundColor,
         primaryColor = primaryColor,
         textColor = textColor,
-        onAddClicked = { seconds++ },
-        onRemoveClicked = { seconds-- },
+        onAddClicked = { seconds += it },
+        onRemoveClicked = {
+            seconds -= it
+            seconds = seconds.coerceAtLeast(0)
+        },
         onStartClicked = {
             Log.d("FERI", "MyApp: primary when start $primaryColor")
             Log.d("FERI", "MyApp: state when start $colorState")
